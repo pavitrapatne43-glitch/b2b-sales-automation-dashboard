@@ -1,13 +1,18 @@
 import streamlit as st
 import pandas as pd
 
-# Load Data
-df = pd.read_excel("b2b_leads_dataset.xlsx")
+# ------------------ LOAD DATA ------------------
+# Use openpyxl engine (important for Streamlit Cloud)
+@st.cache_data
+def load_data():
+    return pd.read_excel("b2b_leads_dataset.xlsx", engine="openpyxl")
 
-# Title
+df = load_data()
+
+# ------------------ TITLE ------------------
 st.title("📊 B2B Sales Analytics Dashboard")
 
-# ------------------ KPI SECTION ------------------
+# ------------------ KPIs ------------------
 st.subheader("Key Performance Indicators")
 
 total_leads = len(df)
@@ -69,5 +74,6 @@ st.bar_chart(filtered_df["Lead_Source"].value_counts())
 st.subheader("📌 Insights")
 
 st.write("✔ Total Leads:", total_leads)
+st.write("✔ Converted Leads:", converted_leads)
 st.write("✔ Conversion Rate:", round(conversion_rate, 2), "%")
 st.write("✔ Avg Follow-Up Time:", round(avg_followup, 2), "hours")
