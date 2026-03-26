@@ -2,21 +2,27 @@ import streamlit as st
 import pandas as pd
 
 # ------------------ LOAD DATA ------------------
-# Use openpyxl engine (important for Streamlit Cloud)
 @st.cache_data
 def load_data():
-    return pd.read_excel("b2b_leads_dataset.xlsx", engine="openpyxl")
+    try:
+        df = pd.read_excel("b2b_leads_dataset.xlsx", engine="openpyxl")
+        return df
+    except Exception as e:
+        st.error(f"Error loading file: {e}")
+        return None
 
 df = load_data()
+
+# Stop if data not loaded
+if df is None:
+    st.stop()
 
 # ------------------ TITLE ------------------
 st.title("📊 B2B Sales Analytics Dashboard")
 
 # ------------------ KPIs ------------------
-st.subheader("Key Performance Indicators")
-
 total_leads = len(df)
-converted_leads = len(df[df['Status'] == "Converted"])
+converted_leads = df[df['Status'] == "Converted"].shape[0]
 conversion_rate = (converted_leads / total_leads) * 100
 avg_followup = df['Follow_Up_Time'].mean()
 
@@ -27,22 +33,14 @@ col2.metric("Converted Leads", converted_leads)
 col3.metric("Conversion Rate (%)", round(conversion_rate, 2))
 col4.metric("Avg Follow-Up Time", round(avg_followup, 2))
 
-# ------------------ FILTERS ------------------
+# ------------------ SIDEBAR FILTERS ------------------
 st.sidebar.header("Filters")
 
-region_filter = st.sidebar.multiselect(
-    "Select Region", df["Region"].unique()
-)
+region_filter = st.sidebar.multiselect("Region", df["Region"].unique())
+industry_filter = st.sidebar.multiselect("Industry", df["Industry"].unique())
+source_filter = st.sidebar.multiselect("Lead Source", df["Lead_Source"].unique())
 
-industry_filter = st.sidebar.multiselect(
-    "Select Industry", df["Industry"].unique()
-)
-
-source_filter = st.sidebar.multiselect(
-    "Select Lead Source", df["Lead_Source"].unique()
-)
-
-# Apply Filters
+# Apply filters
 filtered_df = df.copy()
 
 if region_filter:
@@ -60,8 +58,8 @@ st.subheader("📊 Leads by Region")
 st.bar_chart(filtered_df["Region"].value_counts())
 
 st.subheader("📊 Conversion by Industry")
-conv_industry = filtered_df[filtered_df["Status"] == "Converted"]["Industry"].value_counts()
-st.bar_chart(conv_industry)
+conversion_data = filtered_df[filtered_df["Status"] == "Converted"]
+st.bar_chart(conversion_data["Industry"].value_counts())
 
 st.subheader("📈 Revenue Trend")
 st.line_chart(filtered_df["Revenue"])
@@ -73,7 +71,7 @@ st.bar_chart(filtered_df["Lead_Source"].value_counts())
 
 st.subheader("📌 Insights")
 
-st.write("✔ Total Leads:", total_leads)
-st.write("✔ Converted Leads:", converted_leads)
-st.write("✔ Conversion Rate:", round(conversion_rate, 2), "%")
-st.write("✔ Avg Follow-Up Time:", round(avg_followup, 2), "hours")
+st.write(f"Total Leads: {total_leads}")
+st.write(f"Converted Leads: {converted_leads}")
+st.write(f"Conversion Rate: {round(conversion_rate, 2)}%")
+st.write(f"Average Follow-Up Time: {round(avg_followup, 2)} hours")
